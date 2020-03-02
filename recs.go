@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"strings"
 )
 
 type Rec struct {
@@ -10,44 +13,86 @@ type Rec struct {
 	UsedTimeInSecs int
 }
 
-var Recs = []Rec{}
+func (r Rec) Format() string {
+	mins := r.UsedTimeInSecs / 60
+	secs := r.UsedTimeInSecs - 60*mins
+
+	timeStr := ""
+	if mins == 0 {
+		timeStr = fmt.Sprintf("%d秒", secs)
+	} else {
+		timeStr = fmt.Sprintf("%d分%秒", mins, secs)
+	}
+	return fmt.Sprintf("%s\t%s\t%d\n", r.Title, r.Date, timeStr)
+}
 
 type RecsIO interface {
-	Open() error
-	GetAll() []Rec
+	Init() error
 	Add(Rec)
-	Close()
+	Query(title string) []Rec
 }
 
 type RecsCSV struct {
-	FileName   string
-	FileObject *File
+	FileName string
+	Data     map[string]([]Rec)
 }
 
-func (rc RecsCSV) Open() error {
-	f, err := os.OpenFile(rc.FileName, os.O_RDWR|os.O_CREATE, 0755)
+func (rc RecsCSV) appendData(r Rec) {
+	ra, ok := rc.Data[r.Title]
+	if !ok {
+		ra = []Rec{}
+	}
+
+	ra = append(ra, r)
+	rc.Data[r.Title] = ra
+}
+
+func (rc RecsCSV) Init() error {
+	//rc.Data = make(map[string]([]Rec))
+
+	f, err := os.Open(rc.FileName)
 	if err != nil {
 		return err
-	} else {
-		rc.FileObject = f
-		return nil
 	}
-}
+	defer f.Close()
 
-func (rc RecsCSV) GetAll() []Rec {
+	br := bufio.NewReader(f)
+	for {
+		s, _, e := br.ReadLine()
+		if e == io.EOF {
+			break
+		}
+		sa := strings.SplitN(string(s), "\t", 3)
+		if len(sa) < 3 {
+			continue
+		}
+
+		rec := Rec(sa[0], sa[1], sa[2])
+		rc.appendData(rec)
+	}
 	return nil
 }
 
-func (rc RecsCSV) Add(r Rec) error {
-	content := fmt.Sprintf("%s\t%s\t%d", r.Title, r.Date, r.UsedTimeInSecs)
-	_, err = rc.FileObject.Write([]byte(content))
-	if err != nil {
-		return err
+func (rc RecsCSV) Query(title string) []Rec {
+	ra, ok := rc.Data[title]
+	if ok {
+		return ra
 	} else {
 		return nil
 	}
 }
 
-func (rc RecsCSV) Close() {
-	rc.FileObject.Close()
+func (rc RecsCSV) Add(r Rec) error {
+	rc.appendData(r)
+
+	f, err := os.OpenFile(rc.FileName, os.O_WRONLY, 0666)
+	if err != nil {
+		return error
+	}
+	defer f.Close()
+
+	_, err = f.Write([]byte(r.Format()))
+	if err != nil {
+		return error
+	}
 }
