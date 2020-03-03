@@ -62,7 +62,7 @@
     }
 
     #resZone {
-    	font-size: 6em;
+      font-size: 6em;
     }
 
     #ansZone {
@@ -259,11 +259,35 @@
     "16-9", "13+3", "13-9", "11-7", "2+5",
   ];
 
+  var w9 = [
+    "16-7", "16-7", "13-6", "15-7", "17-6",
+    "13-6", "11-6", "17-7", "13-6", "13-7",
+    "17-6", "15-7", "10-7", "19-7", "13-6",
+    "15-7", "14-7", "13-6", "13-6", "11-6",
+    "14-6", "12-6", "11-6", "13-7", "15-7",
+    "11-7", "13-7", "20-6", "11-6", "18-7",
+    "11-6", "16-6", "15-7", "7-6", "12-6",
+    "13-7", "8-7", "13-6", "17-7", "11-7",
+    "16-7", "17-6", "19-6", "12-6", "15-6",
+    "14-6", "18-6", "15-7", "13-7", "11-7",
+    "9-6", "13-7", "16-7", "16-6", "14-6",
+    "19-7", "15-7", "18-6", "11-6", "17-6",
+    "17-6", "12-7", "14-7", "13-7", "16-7",
+    "12-7", "18-6", "12-6", "14-6", "12-6",
+    "15-7", "17-7", "13-6", "12-7", "14-7",
+    "13-6", "20-6", "14-7", "15-6", "8-6",
+    "14-6", "11-6", "11-6", "12-6", "14-7",
+    "16-7", "13-6", "15-6", "15-7", "13-6",
+    "14-7", "14-7", "13-7", "8-6", "13-7",
+    "13-6", "13-6", "16-7", "12-7", "12-6",
+  ]
+
   var titles = [
     "寒假口算01（减9,8,7）", "寒假口算02（减9,8,7）",
     "寒假口算01（改）", "寒假口算02（改）",
     "寒假口算03（改）", "寒假口算04（改）",
     "寒假口算05（改）", "寒假口算06（改）",
+    "寒假口算减7,6（一）",
   ]
 
   var allData = [w1, w2, w3, w4, w5, w6, w7, w8];
@@ -424,59 +448,59 @@
     localStorage.setItem(title, JSON.stringify(recs));
   }
 
-  function showBtnsOnly(){
-    let bvs={
-      "startBtn":false,
-      "nextBtn":false,
-      "perfBtn":false,
-      "backBtn":false,
-      "repeatBtn":false
+  function showBtnsOnly() {
+    let bvs = {
+      "startBtn": false,
+      "nextBtn": false,
+      "perfBtn": false,
+      "backBtn": false,
+      "repeatBtn": false
     };
 
-    for(let i=0;i<arguments.length;i++){
-      bvs[arguments[i]]=true;
+    for (let i = 0; i < arguments.length; i++) {
+      bvs[arguments[i]] = true;
     }
-    for(let b in bvs){
-      if(bvs[b]){
-        document.getElementById(b).style.display="inline";
-      }else {
-        document.getElementById(b).style.display="none";
+    for (let b in bvs) {
+      if (bvs[b]) {
+        document.getElementById(b).style.display = "inline";
+      } else {
+        document.getElementById(b).style.display = "none";
       }
     }
   }
 
-  function showBlocksOnly(){
-    let bvs={
-      "listZone":false,
-      "perfZone":false,
-      "questionZone":false,
-      "ansZone":false,
-      "extraInfo":false,
-      "resZone":false
+  function showBlocksOnly() {
+    let bvs = {
+      "listZone": false,
+      "perfZone": false,
+      "questionZone": false,
+      "ansZone": false,
+      "extraInfo": false,
+      "resZone": false
     };
 
-    for(let i=0;i<arguments.length;i++){
-      bvs[arguments[i]]=true;
+    for (let i = 0; i < arguments.length; i++) {
+      bvs[arguments[i]] = true;
     }
-    for(let b in bvs){
-      if(bvs[b]){
-        document.getElementById(b).style.display="block";
-      }else {
-        document.getElementById(b).style.display="none";
+    for (let b in bvs) {
+      if (bvs[b]) {
+        document.getElementById(b).style.display = "block";
+      } else {
+        document.getElementById(b).style.display = "none";
       }
     }
   }
 
   function updateStatus() {
     if (status == READY) {
-      showBtnsOnly("startBtn","perfBtn");
+      showBtnsOnly("startBtn", "perfBtn");
       showBlocksOnly("listZone");
     } else if (status == PERFINFO) {
       showBtnsOnly("backBtn");
       showBlocksOnly("perfZone");
     } else if (status == WORKING) {
       showBtnsOnly("nextBtn");
-      showBlocksOnly("extraInfo","ansZone","questionZone");
+      showBlocksOnly("extraInfo", "ansZone", "questionZone");
 
       showWork();
     } else if (status == FINISHED) {
@@ -541,7 +565,7 @@
 
   backBtn.onclick = function () { status = READY; updateStatus(); }
 
-  repeatBtn.onclick = function() { status = READY; updateStatus(); }
+  repeatBtn.onclick = function () { status = READY; updateStatus(); }
 
   azone.onclick = function () { this.innerHTML = "答案：" + eval(questions[curPos]); }
 
