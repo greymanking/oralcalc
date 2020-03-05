@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>口算训练</title>
+  <style>
+    body {
+      background-color: beige;
+    }
+
+    li {
+      cursor: pointer;
+      font-size: 2em;
+    }
+
+    li.selected {
+      color: blue;
+    }
+
+    li.unselected {
+      color: black;
+    }
+
+    button {
+      font-size: 2em;
+      margin: 10px;
+      padding: 0 20px;
+    }
+
+    #extraInfo {
+      font-size: 1.5em;
+    }
+
+    #ansZone {
+      font-size: 1.5em;
+    }
+
+    #title {
+      font-size: 2em;
+    }
+
+    #perf {
+      font-size: 1.5em;
+      margin: 15px 0;
+      color: blue;
+      text-align: left;
+    }
+
+    #taskZone {
+      margin: 0 auto;
+      text-align: center;
+      vertical-align: middle;
+      max-width: 30em;
+    }
+
+    #questionZone {
+      font-size: 10em;
+      vertical-align: bottom;
+    }
+
+    #resZone {
+      font-size: 6em;
+    }
+
+    #ansZone {
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="taskZone">
+    <ul id="listZone">
+    </ul>
+    <div id="perfZone">
+      <div id="title"></div>
+      <div id="perf"></div>
+    </div>
+    <div id="extraInfo"></div>
+    <div id="questionZone"></div>
+    <div id="resZone"></div>
+    <div id="btnZone">
+      <button id="nextBtn">下一题</button>
+      <button id="startBtn">出　发</button>
+      <button id="repeatBtn">再一次</button>
+      <button id="perfBtn">看成绩</button>
+      <button id="backBtn">返　回</button>
+    </div>
+    <div id="ansZone">
+    </div>
+  </div>
+</body>
+<script type="text/javascript" src="./jquery-3.4.1.min.js"></script>
+<script type="text/javascript">
+  document.body.style.fontSize = Math.min(16, Math.floor(window.innerWidth / 30)) + "px";
+
+  //***以下初始化数据***//
+  var questions = null;
+  var curTaskKey = "";
+
+  var PERFINFO = -2, READY = -1, WORKING = 0, FINISHED = 1;
+  var status = READY;
+
+  var startTime = 0;
+  var curPos = 0;  //在本套题中目前题目的pos，非该套题的pos
+
+  //***以下定义及创建元素变量***//
+
+  var lzone = document.getElementById("listZone");
+  var pzone = document.getElementById("perfZone");
+
+  var qzone = document.getElementById("questionZone");
+  var azone = document.getElementById("ansZone");
+
+  var ei = document.getElementById("extraInfo");
+
+  var rzone = document.getElementById("resZone");
+
+  var startBtn = document.getElementById("startBtn");
+  var nextBtn = document.getElementById("nextBtn");
+  var perfBtn = document.getElementById("perfBtn");
+  var backBtn = document.getElementById("backBtn");
+  var repeatBtn = document.getElementById("repeatBtn");
+
+  var titleEl = document.getElementById("title");
+  var perfEl = document.getElementById("perf");
+  
+  function fetchIndex(){
+    $.ajax({
+      url: "/dataindex.json",
+      context: lzone
+    }).done(function(data) {
+      tasks = JSON.parse(data);
+      for (let i = 0; i < tasks.length; i++) {
+        let item = document.createElement("li");
+        let task = tasks[i];
+        item.setAttribute("key", task.key);
+        item.innerHTML = task.title;
+        lzone.appendChild(item);
+        item.onclick=function(){
+          curTaskKey = this.getAttribute("key");
+          updateListView(curTaskKey);
+        };
+        if(i==0){
+          curTaskKey = task.key;
+          updateListView(curTaskKey);
+        }
+      }
+    });
+  }
+  
+  function fetchData(taskId) {
+    $.ajax({
+      url: "/data?id="+taskId,
+      context: document.body
+    }).done(function() {
+      $( this ).addClass( "done" );
+    });
+  }
+  
+  function submitRec(taskId,date,timeInSecs){
+    
+  }
+  
+  function getRecs(){
+    
+  }
+
+  var items = [];
+
+
+
+
+  //***以下定义函数***//
+
+  function startWork() {
+    startTime = new Date().getTime();
+    curPos = 0;
+
+    status = WORKING;
+    updateStatus();
+  }
+
+  function showWork() {
+    ei.innerHTML = "第 " + (curPos + 1) + " 题";
+    qzone.innerHTML = questions[curPos];
+    azone.innerHTML = "点击看答案";
+  }
+
+  function moveNext() {
+    curPos++;
+
+    if (curPos == questions.length) {
+      status = FINISHED;
+      updateStatus();
+    } else {
+      showWork();
+    }
+  }
+
+  function viewPerf() {
+    let title = curTitle;
+    titleEl.innerHTML = title;
+
+    let recStr = localStorage.getItem(title);
+    if (recStr) {
+      rec = JSON.parse(recStr);
+      perfEl.innerHTML = "";
+      for (let k in rec) {
+        perfEl.innerHTML += (k + "&nbsp;&nbsp;&nbsp;" + secsToMinSecs(parseInt(rec[k])) + "<BR />");
+      }
+    } else {
+      perfEl.innerHTML = "无记录";
+    }
+
+    status = PERFINFO;
+    updateStatus();
+  }
+
+  function secsToMinSecs(secs) {
+    let minutes = Math.floor(secs / 60);
+    let rv = minutes == 0 ? "" : (minutes + "分");
+    let seconds = secs - minutes * 60;
+    rv += (seconds == 0 ? "" : (seconds + "秒"));
+
+    return rv;
+  }
+
+  function formatDate(fmt, date) {
+    let ret;
+    const opt = {
+      "Y+": date.getFullYear().toString(),        // 年
+      "m+": (date.getMonth() + 1).toString(),     // 月
+      "d+": date.getDate().toString(),            // 日
+      "H+": date.getHours().toString(),           // 时
+      "M+": date.getMinutes().toString(),         // 分
+      "S+": date.getSeconds().toString()          // 秒
+      // 有其他格式化字符需求可以继续添加，必须转化成字符串
+    };
+    for (let k in opt) {
+      ret = new RegExp("(" + k + ")").exec(fmt);
+      if (ret) {
+        fmt = fmt.replace(ret[1], (ret[1].length == 1) ? (opt[k]) : (opt[k].padStart(ret[1].length, "0")))
+      };
+    };
+    return fmt;
+  }
+
+  function addRec(title, secs) {
+    let recs = {};
+    let recsStr = localStorage.getItem(title);
+    if (recsStr) {
+      recs = JSON.parse(recsStr);
+    }
+
+    recs[formatDate("YYYY-mm-dd HH:MM:SS", new Date())] = secs;
+
+    localStorage.setItem(title, JSON.stringify(recs));
+  }
+
+  function showBtnsOnly() {
+    let bvs = {
+      "startBtn": false,
+      "nextBtn": false,
+      "perfBtn": false,
+      "backBtn": false,
+      "repeatBtn": false
+    };
+
+    for (let i = 0; i < arguments.length; i++) {
+      bvs[arguments[i]] = true;
+    }
+    for (let b in bvs) {
+      if (bvs[b]) {
+        document.getElementById(b).style.display = "inline";
+      } else {
+        document.getElementById(b).style.display = "none";
+      }
+    }
+  }
+
+  function showBlocksOnly() {
+    let bvs = {
+      "listZone": false,
+      "perfZone": false,
+      "questionZone": false,
+      "ansZone": false,
+      "extraInfo": false,
+      "resZone": false
+    };
+
+    for (let i = 0; i < arguments.length; i++) {
+      bvs[arguments[i]] = true;
+    }
+    for (let b in bvs) {
+      if (bvs[b]) {
+        document.getElementById(b).style.display = "block";
+      } else {
+        document.getElementById(b).style.display = "none";
+      }
+    }
+  }
+
+  function updateStatus() {
+    if (status == READY) {
+      showBtnsOnly("startBtn", "perfBtn");
+      showBlocksOnly("listZone");
+    } else if (status == PERFINFO) {
+      showBtnsOnly("backBtn");
+      showBlocksOnly("perfZone");
+    } else if (status == WORKING) {
+      showBtnsOnly("nextBtn");
+      showBlocksOnly("extraInfo", "ansZone", "questionZone");
+
+      showWork();
+    } else if (status == FINISHED) {
+      showBtnsOnly("repeatBtn");
+      showBlocksOnly("resZone");
+
+      let usedTime = Math.round((new Date().getTime() - startTime) / 1000);
+      rzone.innerHTML = secsToMinSecs(usedTime);
+      addRec(curTitle, usedTime);
+    }
+  }
+
+  function updateListView(ckey) {
+    items = lzone.getElementsByTagName("li");
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].getAttribute("key") == ckey) {
+        items[i].className = "selected";
+      }
+      else {
+        items[i].className = "unselected";
+      }
+    }
+  }
+
+  for (let i = 0; i < items.length; i++) {
+    items[i].onclick = function () {
+      let k = this.getAttribute("key");
+      updateListView(k);
+      curTitle = this.innerHTML;
+      questions = allData[parseInt(k)];
+    }
+  }
+
+  function keyEvent(e) {
+    let ev = e || window.event;  //标准化事件处理
+    //处理回车键
+    if (ev.keyCode == 13) {
+
+      //必须，否则按钮获得焦点时，会触发其默认行为
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      if (status == READY) {
+        startWork();
+      } else {
+        moveNext();
+      }
+    }
+
+    //ev.returnValue = false;
+  }
+
+  //***以下绑定事件***//
+
+  //如果写在keyup上，会触发body中元素的默认keypress行为
+  document.body.onkeypress = keyEvent;
+
+  startBtn.onclick = startWork;
+
+  perfBtn.onclick = viewPerf;
+
+  nextBtn.onclick = moveNext;
+
+  backBtn.onclick = function () { status = READY; updateStatus(); }
+
+  repeatBtn.onclick = function () { status = READY; updateStatus(); }
+
+  azone.onclick = function () { this.innerHTML = "答案：" + eval(questions[curPos]); }
+  fetchIndex();
+
+  //***以下初始化应用***//
+  updateStatus();
+
+</script>
+
+</html>

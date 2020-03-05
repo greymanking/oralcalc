@@ -3,33 +3,21 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 )
 
 type Rec struct {
-	Title          string
+	ID             string
 	Date           string
 	UsedTimeInSecs int
-}
-
-func (r Rec) Format() string {
-	mins := r.UsedTimeInSecs / 60
-	secs := r.UsedTimeInSecs - 60*mins
-
-	timeStr := ""
-	if mins == 0 {
-		timeStr = fmt.Sprintf("%d秒", secs)
-	} else {
-		timeStr = fmt.Sprintf("%d分%秒", mins, secs)
-	}
-	return fmt.Sprintf("%s\t%s\t%d\n", r.Title, r.Date, timeStr)
 }
 
 type RecsIO interface {
 	Init() error
 	Add(Rec)
-	Query(title string) []Rec
+	Query(id string) []Rec
 }
 
 type RecsCSV struct {
@@ -38,13 +26,13 @@ type RecsCSV struct {
 }
 
 func (rc RecsCSV) appendData(r Rec) {
-	ra, ok := rc.Data[r.Title]
+	ra, ok := rc.Data[r.ID]
 	if !ok {
 		ra = []Rec{}
 	}
 
 	ra = append(ra, r)
-	rc.Data[r.Title] = ra
+	rc.Data[r.ID] = ra
 }
 
 func (rc RecsCSV) Init() error {
@@ -67,14 +55,18 @@ func (rc RecsCSV) Init() error {
 			continue
 		}
 
-		rec := Rec(sa[0], sa[1], sa[2])
+		rec := Rec{
+			ID:             sa[0],
+			Date:           sa[1],
+			UsedTimeInSecs: 0,
+		}
 		rc.appendData(rec)
 	}
 	return nil
 }
 
-func (rc RecsCSV) Query(title string) []Rec {
-	ra, ok := rc.Data[title]
+func (rc RecsCSV) Query(id string) []Rec {
+	ra, ok := rc.Data[id]
 	if ok {
 		return ra
 	} else {
@@ -87,12 +79,13 @@ func (rc RecsCSV) Add(r Rec) error {
 
 	f, err := os.OpenFile(rc.FileName, os.O_WRONLY, 0666)
 	if err != nil {
-		return error
+		return err
 	}
 	defer f.Close()
 
-	_, err = f.Write([]byte(r.Format()))
+	_, err = f.Write([]byte(fmt.Sprintf("%s\t%s\t%d\n", r.ID, r.Date, r.UsedTimeInSecs)))
 	if err != nil {
-		return error
+		return err
 	}
+	return nil
 }
