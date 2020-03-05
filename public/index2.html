@@ -127,61 +127,51 @@
 
   var titleEl = document.getElementById("title");
   var perfEl = document.getElementById("perf");
-  
-  function fetchIndex(){
+
+  function fetchIndex() {
     $.ajax({
       url: "/dataindex.json",
-      context: lzone
-    }).done(function(data) {
-      tasks = JSON.parse(data);
+      dataType: "json" //默认是Intelligent Guess，如果再做parse会出错
+    }).done(function (tasks) {
       for (let i = 0; i < tasks.length; i++) {
         let item = document.createElement("li");
         let task = tasks[i];
         item.setAttribute("key", task.key);
         item.innerHTML = task.title;
         lzone.appendChild(item);
-        item.onclick=function(){
+        item.onclick = function () {
           curTaskKey = this.getAttribute("key");
           updateListView(curTaskKey);
         };
-        if(i==0){
+        if (i == 0) {
           curTaskKey = task.key;
           updateListView(curTaskKey);
         }
       }
     });
   }
-  
-  function fetchData(taskId) {
-    $.ajax({
-      url: "/data?id="+taskId,
-      context: document.body
-    }).done(function() {
-      $( this ).addClass( "done" );
-    });
-  }
-  
-  function submitRec(taskId,date,timeInSecs){
-    
-  }
-  
-  function getRecs(){
-    
+
+  function submitRec(taskId, date, timeInSecs) {
+
   }
 
-  var items = [];
+  function getRecs() {
 
-
-
+  }
 
   //***以下定义函数***//
 
   function startWork() {
-    startTime = new Date().getTime();
-    curPos = 0;
+    $.ajax({
+      url: "/data/"+curTaskKey+".json",
+    }).done(function (data) {
+      questions = data;
+      startTime = new Date().getTime();
+      curPos = 0;
 
-    status = WORKING;
-    updateStatus();
+      status = WORKING;
+      updateStatus();
+    });
   }
 
   function showWork() {
@@ -329,23 +319,10 @@
   function updateListView(ckey) {
     items = lzone.getElementsByTagName("li");
     for (let i = 0; i < items.length; i++) {
-      if (items[i].getAttribute("key") == ckey) {
-        items[i].className = "selected";
-      }
-      else {
-        items[i].className = "unselected";
-      }
+      items[i].className = items[i].getAttribute("key") == ckey ? "selected" : "unselected";
     }
   }
 
-  for (let i = 0; i < items.length; i++) {
-    items[i].onclick = function () {
-      let k = this.getAttribute("key");
-      updateListView(k);
-      curTitle = this.innerHTML;
-      questions = allData[parseInt(k)];
-    }
-  }
 
   function keyEvent(e) {
     let ev = e || window.event;  //标准化事件处理
