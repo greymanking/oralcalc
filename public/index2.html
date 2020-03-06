@@ -30,11 +30,11 @@
       padding: 0 20px;
     }
 
-    #extraInfo {
+    #extraInfoPane {
       font-size: 1.5em;
     }
 
-    #ansZone {
+    #ansPane {
       font-size: 1.5em;
     }
 
@@ -49,47 +49,47 @@
       text-align: left;
     }
 
-    #taskZone {
+    #taskPane {
       margin: 0 auto;
       text-align: center;
       vertical-align: middle;
       max-width: 30em;
     }
 
-    #questionZone {
+    #questionPane {
       font-size: 10em;
       vertical-align: bottom;
     }
 
-    #resZone {
+    #resPane {
       font-size: 6em;
     }
 
-    #ansZone {
+    #ansPane {
       cursor: pointer;
     }
   </style>
 </head>
 
 <body>
-  <div id="taskZone">
-    <ul id="listZone">
+  <div id="taskPane">
+    <ul id="listPane" class="pane">
     </ul>
-    <div id="perfZone">
+    <div id="perfPane" class="pane">
       <div id="title"></div>
       <div id="perf"></div>
     </div>
-    <div id="extraInfo"></div>
-    <div id="questionZone"></div>
-    <div id="resZone"></div>
-    <div id="btnZone">
+    <div id="extraInfoPane" class="pane"></div>
+    <div id="questionPane" class="pane"></div>
+    <div id="resPane" class="pane"></div>
+    <div id="btnPane">
       <button id="nextBtn">下一题</button>
       <button id="startBtn">出　发</button>
       <button id="repeatBtn">再一次</button>
       <button id="perfBtn">看成绩</button>
       <button id="backBtn">返　回</button>
     </div>
-    <div id="ansZone">
+    <div id="ansPane" class="pane">
     </div>
   </div>
 </body>
@@ -97,27 +97,143 @@
 <script type="text/javascript">
   document.body.style.fontSize = Math.min(16, Math.floor(window.innerWidth / 30)) + "px";
 
-  //***以下初始化数据***//
-  var questions = null;
-  var curTaskKey = "";
+  var ui = {
+    showBtnsOnly: function(){
+      let sb = new Set(arguments);
+      $("button").each(function(){
+        $(this).css("display",sb.has($(this).attr("id"))?"inline":"none");
+      });
+    },
+    showPanesOnly: function(){
+      let sb = new Set(arguments);
+      $(".pane").each(function(){
+        $(this).css("display",sb.has($(this).attr("id"))?"block":"none");
+      });
+    },
+    showActiveTitle: function(ckey) {
+      $("#listPane>li").each(function(){
+        if($(this).attr("key")==ckey){
+          $(this).removeClass("unselected").addClass("selected");
+        } else {
+          $(this).removeClass("selected").addClass("unselected");
+        }
+      });
+    }
+  }
+
+  var tasks = {
+    data:{}, //{key:{title:string,questions:[string],recs:[{date:string,secs:int}]}}
+    fetchList:function(){
+      $.ajax({
+      url: "/dataindex.json",
+      dataType: "json" //默认是Intelligent Guess，如果再做parse会出错
+    }).done(function (tasks) {
+      for (let i = 0; i < tasks.length; i++) {
+        let item = document.createElement("li");
+        let task = tasks[i];
+        tasks[task.key]={title:task.title}
+        item.setAttribute("key", task.key);
+        item.innerHTML = task.title;
+        lPane.appendChild(item);
+        item.onclick = function () {
+          globals.setActiveTask(this.getAttribute("key"));
+        };
+        if (i == 0) {
+          globals.setActiveTask(task.key);
+        }
+      }
+      
+      globals.setStage(READY);
+    });
+    },
+    fetchRecs:function(key){},
+    addRec:function(key,date,secs){
+      let recs = this.data[key].recs;
+      if(!recs){
+        recs=[];
+        this.data[key].recs = recs;
+      }
+      let newRec = {date:formatDate(date), secs:secs};
+      recs.push(newRec);
+    }
+  }
+
+  var activeTask = {
+    key:"",
+    data:null,
+    pos:0,
+    startTime:0,
+    startWork: function() {
+      $.ajax({
+        url: "/data/"+this.key+".json",
+        dataType: "json"
+      }).done(function (data) {
+        this.data = data;
+        this.startTime = new Date().getTime();
+        this.pos = 0;
+
+        globals.setStage(WORKING);
+      });
+    },
+    showWork: function() {
+      ei.innerHTML = "第 " + (this.pos + 1) + " 题";
+      qPane.innerHTML = this.data[this.pos];
+      aPane.innerHTML = "点击看答案";
+    },
+    moveNext: function() {
+      this.pos++;
+
+      if (this.pos == this.data.length) {
+        globals.setStage(FINISHED);
+      } else {
+        this.showWork();
+      }
+    }
+  }
 
   var PERFINFO = -2, READY = -1, WORKING = 0, FINISHED = 1;
-  var status = READY;
 
-  var startTime = 0;
-  var curPos = 0;  //在本套题中目前题目的pos，非该套题的pos
+  var globals = {
+    stage: READY,
+    setActiveTask: function(key){
+      activeTask.key = key;
+      ui.showActiveTitle(key);
+    },
+    setStage: function(stage) {
+      this.stage = stage;
+      if (stage == READY) {
+        ui.showBtnsOnly("startBtn", "perfBtn");
+        ui.showPanesOnly("listPane");
+      } else if (stage == PERFINFO) {
+        ui.showBtnsOnly("backBtn");
+        ui.showPanesOnly("perfPane");
+      } else if (stage == WORKING) {
+        ui.showBtnsOnly("nextBtn");
+        ui.showPanesOnly("extraInfoPane", "ansPane", "questionPane");
+        activeTask.showWork();
+      } else if (stage == FINISHED) {
+        ui.showBtnsOnly("repeatBtn");
+        ui.showPanesOnly("resPane");
+
+        let curDate = new Date();
+        let secs = Math.round((curDate.getTime() - tasks.active.startTime) / 1000);
+        $("#resPane").text(secsToMinSecs(secs));
+        tasks.addRec(activeTask.key,curDate,secs);
+      }
+    }
+  }
 
   //***以下定义及创建元素变量***//
 
-  var lzone = document.getElementById("listZone");
-  var pzone = document.getElementById("perfZone");
+  var lPane = document.getElementById("listPane");
+  var pPane = document.getElementById("perfPane");
 
-  var qzone = document.getElementById("questionZone");
-  var azone = document.getElementById("ansZone");
+  var qPane = document.getElementById("questionPane");
+  var aPane = document.getElementById("ansPane");
 
-  var ei = document.getElementById("extraInfo");
+  var ei = document.getElementById("extraInfoPane");
 
-  var rzone = document.getElementById("resZone");
+  var rPane = document.getElementById("resPane");
 
   var startBtn = document.getElementById("startBtn");
   var nextBtn = document.getElementById("nextBtn");
@@ -128,68 +244,6 @@
   var titleEl = document.getElementById("title");
   var perfEl = document.getElementById("perf");
 
-  function fetchIndex() {
-    $.ajax({
-      url: "/dataindex.json",
-      dataType: "json" //默认是Intelligent Guess，如果再做parse会出错
-    }).done(function (tasks) {
-      for (let i = 0; i < tasks.length; i++) {
-        let item = document.createElement("li");
-        let task = tasks[i];
-        item.setAttribute("key", task.key);
-        item.innerHTML = task.title;
-        lzone.appendChild(item);
-        item.onclick = function () {
-          curTaskKey = this.getAttribute("key");
-          updateListView(curTaskKey);
-        };
-        if (i == 0) {
-          curTaskKey = task.key;
-          updateListView(curTaskKey);
-        }
-      }
-    });
-  }
-
-  function submitRec(taskId, date, timeInSecs) {
-
-  }
-
-  function getRecs() {
-
-  }
-
-  //***以下定义函数***//
-
-  function startWork() {
-    $.ajax({
-      url: "/data/"+curTaskKey+".json",
-    }).done(function (data) {
-      questions = data;
-      startTime = new Date().getTime();
-      curPos = 0;
-
-      status = WORKING;
-      updateStatus();
-    });
-  }
-
-  function showWork() {
-    ei.innerHTML = "第 " + (curPos + 1) + " 题";
-    qzone.innerHTML = questions[curPos];
-    azone.innerHTML = "点击看答案";
-  }
-
-  function moveNext() {
-    curPos++;
-
-    if (curPos == questions.length) {
-      status = FINISHED;
-      updateStatus();
-    } else {
-      showWork();
-    }
-  }
 
   function viewPerf() {
     let title = curTitle;
@@ -206,8 +260,7 @@
       perfEl.innerHTML = "无记录";
     }
 
-    status = PERFINFO;
-    updateStatus();
+    globals.setStage(PERFINFO);
   }
 
   function secsToMinSecs(secs) {
@@ -251,79 +304,6 @@
     localStorage.setItem(title, JSON.stringify(recs));
   }
 
-  function showBtnsOnly() {
-    let bvs = {
-      "startBtn": false,
-      "nextBtn": false,
-      "perfBtn": false,
-      "backBtn": false,
-      "repeatBtn": false
-    };
-
-    for (let i = 0; i < arguments.length; i++) {
-      bvs[arguments[i]] = true;
-    }
-    for (let b in bvs) {
-      if (bvs[b]) {
-        document.getElementById(b).style.display = "inline";
-      } else {
-        document.getElementById(b).style.display = "none";
-      }
-    }
-  }
-
-  function showBlocksOnly() {
-    let bvs = {
-      "listZone": false,
-      "perfZone": false,
-      "questionZone": false,
-      "ansZone": false,
-      "extraInfo": false,
-      "resZone": false
-    };
-
-    for (let i = 0; i < arguments.length; i++) {
-      bvs[arguments[i]] = true;
-    }
-    for (let b in bvs) {
-      if (bvs[b]) {
-        document.getElementById(b).style.display = "block";
-      } else {
-        document.getElementById(b).style.display = "none";
-      }
-    }
-  }
-
-  function updateStatus() {
-    if (status == READY) {
-      showBtnsOnly("startBtn", "perfBtn");
-      showBlocksOnly("listZone");
-    } else if (status == PERFINFO) {
-      showBtnsOnly("backBtn");
-      showBlocksOnly("perfZone");
-    } else if (status == WORKING) {
-      showBtnsOnly("nextBtn");
-      showBlocksOnly("extraInfo", "ansZone", "questionZone");
-
-      showWork();
-    } else if (status == FINISHED) {
-      showBtnsOnly("repeatBtn");
-      showBlocksOnly("resZone");
-
-      let usedTime = Math.round((new Date().getTime() - startTime) / 1000);
-      rzone.innerHTML = secsToMinSecs(usedTime);
-      addRec(curTitle, usedTime);
-    }
-  }
-
-  function updateListView(ckey) {
-    items = lzone.getElementsByTagName("li");
-    for (let i = 0; i < items.length; i++) {
-      items[i].className = items[i].getAttribute("key") == ckey ? "selected" : "unselected";
-    }
-  }
-
-
   function keyEvent(e) {
     let ev = e || window.event;  //标准化事件处理
     //处理回车键
@@ -333,7 +313,7 @@
       ev.preventDefault();
       ev.stopPropagation();
 
-      if (status == READY) {
+      if (globals.stage == READY) {
         startWork();
       } else {
         moveNext();
@@ -348,22 +328,19 @@
   //如果写在keyup上，会触发body中元素的默认keypress行为
   document.body.onkeypress = keyEvent;
 
-  startBtn.onclick = startWork;
+  startBtn.onclick = activeTask.startWork;
 
   perfBtn.onclick = viewPerf;
 
-  nextBtn.onclick = moveNext;
+  nextBtn.onclick = activeTask.moveNext;
 
-  backBtn.onclick = function () { status = READY; updateStatus(); }
+  backBtn.onclick = function () { globals.setStage(READY); }
 
-  repeatBtn.onclick = function () { status = READY; updateStatus(); }
+  repeatBtn.onclick = function () { globals.setStage(READY); }
 
-  azone.onclick = function () { this.innerHTML = "答案：" + eval(questions[curPos]); }
-  fetchIndex();
+  aPane.onclick = function () { this.innerHTML = "答案：" + eval(questions[curPos]); }
 
-  //***以下初始化应用***//
-  updateStatus();
-
+  tasks.fetchList();
 </script>
 
 </html>
