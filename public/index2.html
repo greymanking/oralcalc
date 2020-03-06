@@ -94,25 +94,26 @@
   </div>
 </body>
 <script type="text/javascript" src="./jquery-3.4.1.min.js"></script>
+<script type="text/javascript" src="./utils.js"></script>
 <script type="text/javascript">
   document.body.style.fontSize = Math.min(16, Math.floor(window.innerWidth / 30)) + "px";
 
   var ui = {
-    showBtnsOnly: function(){
+    showBtnsOnly: function () {
       let sb = new Set(arguments);
-      $("button").each(function(){
-        $(this).css("display",sb.has($(this).attr("id"))?"inline":"none");
+      $("button").each(function () {
+        $(this).css("display", sb.has($(this).attr("id")) ? "inline" : "none");
       });
     },
-    showPanesOnly: function(){
+    showPanesOnly: function () {
       let sb = new Set(arguments);
-      $(".pane").each(function(){
-        $(this).css("display",sb.has($(this).attr("id"))?"block":"none");
+      $(".pane").each(function () {
+        $(this).css("display", sb.has($(this).attr("id")) ? "block" : "none");
       });
     },
-    showActiveTitle: function(ckey) {
-      $("#listPane>li").each(function(){
-        if($(this).attr("key")==ckey){
+    showActiveTitle: function (ckey) {
+      $("#listPane>li").each(function () {
+        if ($(this).attr("key") == ckey) {
           $(this).removeClass("unselected").addClass("selected");
         } else {
           $(this).removeClass("selected").addClass("unselected");
@@ -122,67 +123,48 @@
   }
 
   var tasks = {
-    data:{}, //{key:{title:string,questions:[string],recs:[{date:string,secs:int}]}}
-    fetchList:function(){
+    data: {}, //{key:{title:string,recs:[{date:string,secs:int}]}}
+    fetchList: function () {
       $.ajax({
-      url: "/dataindex.json",
-      dataType: "json" //默认是Intelligent Guess，如果再做parse会出错
-    }).done(function (tasks) {
-      for (let i = 0; i < tasks.length; i++) {
-        let item = document.createElement("li");
-        let task = tasks[i];
-        tasks[task.key]={title:task.title}
-        item.setAttribute("key", task.key);
-        item.innerHTML = task.title;
-        lPane.appendChild(item);
-        item.onclick = function () {
-          globals.setActiveTask(this.getAttribute("key"));
-        };
-        if (i == 0) {
-          globals.setActiveTask(task.key);
+        url: "/dataindex.json",
+        dataType: "json" //默认是Intelligent Guess，如果再做parse会出错
+      }).done(function (tasks) {
+        for (let i = 0; i < tasks.length; i++) {
+          let task = tasks[i];
+          $('<li>', { key: task.key }).text(task.title).appendTo($("#listPane"));
+          //tasks[task.key] = { title: task.title }
+          if (i == 0) {
+            globals.setActiveTask(task.key);
+          }
         }
-      }
-      
-      globals.setStage(READY);
-    });
+        $("#listPane>li").click(function () { globals.setActiveTask($(this).attr("key")); });
+        globals.setStage(READY);
+      });
     },
-    fetchRecs:function(key){},
-    addRec:function(key,date,secs){
+    fetchRecs: function (key) { },
+    addRec: function (key, date, secs) {
       let recs = this.data[key].recs;
-      if(!recs){
-        recs=[];
+      if (!recs) {
+        recs = [];
         this.data[key].recs = recs;
       }
-      let newRec = {date:formatDate(date), secs:secs};
+      let newRec = { date: formatDate(date), secs: secs };
       recs.push(newRec);
-    }
+    },
   }
 
   var activeTask = {
-    key:"",
-    data:null,
-    pos:0,
-    startTime:0,
-    startWork: function() {
-      $.ajax({
-        url: "/data/"+this.key+".json",
-        dataType: "json"
-      }).done(function (data) {
-        this.data = data;
-        this.startTime = new Date().getTime();
-        this.pos = 0;
-
-        globals.setStage(WORKING);
-      });
+    // key: "",
+    // data: null,
+    // pos: 0,
+    // startTime: 0,
+    showWork: function () {
+      $("#extraInfoPane").text(`第${this.pos + 1}题`);
+      $("#questionPane").text(this.data[this.pos]);
+      $("#ansPane").text("点击看答案");
     },
-    showWork: function() {
-      ei.innerHTML = "第 " + (this.pos + 1) + " 题";
-      qPane.innerHTML = this.data[this.pos];
-      aPane.innerHTML = "点击看答案";
-    },
-    moveNext: function() {
+    moveNext: function () {
       this.pos++;
-
       if (this.pos == this.data.length) {
         globals.setStage(FINISHED);
       } else {
@@ -195,11 +177,23 @@
 
   var globals = {
     stage: READY,
-    setActiveTask: function(key){
+    setActiveTask: function (key) {
       activeTask.key = key;
       ui.showActiveTitle(key);
     },
-    setStage: function(stage) {
+    startWork: function () {
+      $.ajax({
+        url: "/data/" + activeTask.key + ".json",
+        dataType: "json"
+      }).done(function (data) {
+        activeTask.data = data;
+        activeTask.startTime = new Date().getTime();
+        activeTask.pos = 0;
+
+        globals.setStage(WORKING);
+      });
+    },
+    setStage: function (stage) {
       this.stage = stage;
       if (stage == READY) {
         ui.showBtnsOnly("startBtn", "perfBtn");
@@ -218,7 +212,7 @@
         let curDate = new Date();
         let secs = Math.round((curDate.getTime() - tasks.active.startTime) / 1000);
         $("#resPane").text(secsToMinSecs(secs));
-        tasks.addRec(activeTask.key,curDate,secs);
+        tasks.addRec(activeTask.key, curDate, secs);
       }
     }
   }
@@ -244,7 +238,7 @@
   var titleEl = document.getElementById("title");
   var perfEl = document.getElementById("perf");
 
-
+//todo
   function viewPerf() {
     let title = curTitle;
     titleEl.innerHTML = title;
@@ -263,35 +257,7 @@
     globals.setStage(PERFINFO);
   }
 
-  function secsToMinSecs(secs) {
-    let minutes = Math.floor(secs / 60);
-    let rv = minutes == 0 ? "" : (minutes + "分");
-    let seconds = secs - minutes * 60;
-    rv += (seconds == 0 ? "" : (seconds + "秒"));
-
-    return rv;
-  }
-
-  function formatDate(fmt, date) {
-    let ret;
-    const opt = {
-      "Y+": date.getFullYear().toString(),        // 年
-      "m+": (date.getMonth() + 1).toString(),     // 月
-      "d+": date.getDate().toString(),            // 日
-      "H+": date.getHours().toString(),           // 时
-      "M+": date.getMinutes().toString(),         // 分
-      "S+": date.getSeconds().toString()          // 秒
-      // 有其他格式化字符需求可以继续添加，必须转化成字符串
-    };
-    for (let k in opt) {
-      ret = new RegExp("(" + k + ")").exec(fmt);
-      if (ret) {
-        fmt = fmt.replace(ret[1], (ret[1].length == 1) ? (opt[k]) : (opt[k].padStart(ret[1].length, "0")))
-      };
-    };
-    return fmt;
-  }
-
+//todo
   function addRec(title, secs) {
     let recs = {};
     let recsStr = localStorage.getItem(title);
@@ -304,43 +270,25 @@
     localStorage.setItem(title, JSON.stringify(recs));
   }
 
-  function keyEvent(e) {
-    let ev = e || window.event;  //标准化事件处理
-    //处理回车键
-    if (ev.keyCode == 13) {
-
-      //必须，否则按钮获得焦点时，会触发其默认行为
-      ev.preventDefault();
-      ev.stopPropagation();
-
-      if (globals.stage == READY) {
-        startWork();
-      } else {
-        moveNext();
+  $(function () {
+    //如果写在keyup上，会触发body中元素的默认keypress行为
+    $("body").keypress(function (ev) {
+      if (ev.which == 13) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        globals.stage == READY ? globals.startWork() : activeTask.moveNext();
       }
-    }
+    });
 
-    //ev.returnValue = false;
-  }
+    $("#startBtn").click(function () { globals.startWork(); });
+    perfBtn.onclick = viewPerf;
+    $("#nextBtn").click(function () { activeTask.moveNext(); });
+    $("#backBtn").click(function () { globals.setStage(READY); });
+    $("#repeatBtn").click(function () { globals.setStage(READY); });
+    $("#ansPane").click(function () { $(this).text("答案：" + eval(activeTask.data[activeTask.pos])); });
 
-  //***以下绑定事件***//
-
-  //如果写在keyup上，会触发body中元素的默认keypress行为
-  document.body.onkeypress = keyEvent;
-
-  startBtn.onclick = activeTask.startWork;
-
-  perfBtn.onclick = viewPerf;
-
-  nextBtn.onclick = activeTask.moveNext;
-
-  backBtn.onclick = function () { globals.setStage(READY); }
-
-  repeatBtn.onclick = function () { globals.setStage(READY); }
-
-  aPane.onclick = function () { this.innerHTML = "答案：" + eval(questions[curPos]); }
-
-  tasks.fetchList();
+    tasks.fetchList();
+  });
 </script>
 
 </html>
