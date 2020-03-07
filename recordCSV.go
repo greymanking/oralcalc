@@ -8,34 +8,22 @@ import (
 	"strings"
 )
 
-type Rec struct {
-	ID             string
-	Date           string
-	UsedTimeInSecs int
-}
-
-type RecsIO interface {
-	Init() error
-	Add(Rec)
-	Query(id string) []Rec
-}
-
 type RecsCSV struct {
 	FileName string
-	Data     map[string]([]Rec)
+	Data     map[string]([]Record)
 }
 
-func (rc RecsCSV) appendData(r Rec) {
-	ra, ok := rc.Data[r.ID]
+func (rc RecsCSV) appendData(r Record) {
+	ra, ok := rc.Data[r.Key]
 	if !ok {
-		ra = []Rec{}
+		ra = []Record{}
 	}
 
 	ra = append(ra, r)
-	rc.Data[r.ID] = ra
+	rc.Data[r.Key] = ra
 }
 
-func (rc RecsCSV) Init() error {
+func (rc *RecsCSV) Load() error {
 	//rc.Data = make(map[string]([]Rec))
 
 	f, err := os.Open(rc.FileName)
@@ -55,17 +43,17 @@ func (rc RecsCSV) Init() error {
 			continue
 		}
 
-		rec := Rec{
-			ID:             sa[0],
-			Date:           sa[1],
-			UsedTimeInSecs: 0,
+		rec := Record{
+			Key:  sa[0],
+			Date: 349484948,
+			Secs: 0,
 		}
 		rc.appendData(rec)
 	}
 	return nil
 }
 
-func (rc RecsCSV) Query(id string) []Rec {
+func (rc *RecsCSV) Query(id string) []Record {
 	ra, ok := rc.Data[id]
 	if ok {
 		return ra
@@ -74,7 +62,7 @@ func (rc RecsCSV) Query(id string) []Rec {
 	}
 }
 
-func (rc RecsCSV) Add(r Rec) error {
+func (rc *RecsCSV) Add(r Record) error {
 	rc.appendData(r)
 
 	f, err := os.OpenFile(rc.FileName, os.O_WRONLY, 0666)
@@ -83,7 +71,7 @@ func (rc RecsCSV) Add(r Rec) error {
 	}
 	defer f.Close()
 
-	_, err = f.Write([]byte(fmt.Sprintf("%s\t%s\t%d\n", r.ID, r.Date, r.UsedTimeInSecs)))
+	_, err = f.Write([]byte(fmt.Sprintf("%s\t%s\t%d\n", r.Key, r.Date, r.Secs)))
 	if err != nil {
 		return err
 	}

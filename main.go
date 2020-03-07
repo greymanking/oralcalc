@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func main() {
+func mainb() {
 
 	gin.SetMode(gin.ReleaseMode)
 	gin.DisableConsoleColor()
