@@ -57,17 +57,8 @@ func (rs *RecsSqlite) Add(user string, rec Record) error {
 	return nil
 }
 
-func (rs *RecsSqlite) Query(user, key string) []Record {
-	userId := rs.queryUser(user)
-	if userId <= 0 {
-		return nil
-	}
+func RowsToRecords(rows *sql.Rows) []Record {
 	var recs []Record
-	rows, err := rs.dbp.Query("SELECT key,date,secs FROM recs where user=? and key=?",
-		userId, key)
-	if err != nil {
-		return nil
-	}
 
 	for rows.Next() {
 		var rec Record
@@ -81,28 +72,34 @@ func (rs *RecsSqlite) Query(user, key string) []Record {
 	return recs
 }
 
+func (rs *RecsSqlite) Query(user, key string) []Record {
+	userId := rs.queryUser(user)
+	if userId <= 0 {
+		return nil
+	}
+
+	rows, err := rs.dbp.Query("SELECT key,date,secs FROM recs where user=? and key=?",
+		userId, key)
+	if err != nil {
+		return nil
+	}
+
+	return RowsToRecords(rows)
+}
+
 func (rs *RecsSqlite) All(user string) []Record {
 	userId := rs.queryUser(user)
 	if userId <= 0 {
 		return nil
 	}
-	var recs []Record
+
 	rows, err := rs.dbp.Query("SELECT key,date,secs FROM recs where user=?",
 		userId)
 	if err != nil {
 		return nil
 	}
 
-	for rows.Next() {
-		var rec Record
-		err := rows.Scan(&rec.Key, &rec.Date, &rec.Secs)
-		if err != nil {
-			log.Print(err)
-		} else {
-			recs = append(recs, rec)
-		}
-	}
-	return recs
+	return RowsToRecords(rows)
 }
 
 func (rs *RecsSqlite) Close() {

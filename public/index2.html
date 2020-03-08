@@ -11,6 +11,13 @@
       background-color: beige;
     }
 
+    #app {
+      margin: 0 auto;
+      text-align: center;
+      vertical-align: middle;
+      max-width: 30em;
+    }
+
     li {
       cursor: pointer;
       font-size: 2em;
@@ -30,75 +37,79 @@
       padding: 0 20px;
     }
 
-    #extraInfoPane {
+    #exinfpane {
       font-size: 1.5em;
     }
 
-    #ansPane {
+    #anspane {
       font-size: 1.5em;
     }
 
-    #title {
+    #titleline {
       font-size: 2em;
     }
 
-    #perf {
+    #reclist {
       font-size: 1.5em;
       margin: 15px 0;
       color: blue;
       text-align: left;
     }
 
-    #taskPane {
-      margin: 0 auto;
-      text-align: center;
-      vertical-align: middle;
-      max-width: 30em;
-    }
-
-    #questionPane {
+    #qupane {
       font-size: 10em;
       vertical-align: bottom;
     }
 
-    #resPane {
+    #respane {
       font-size: 6em;
     }
 
-    #ansPane {
+    #anspane {
       cursor: pointer;
     }
   </style>
 </head>
 
 <body>
-  <div id="taskPane">
-    <ul id="listPane" class="pane">
+  <div id="app">
+    <ul id="tasklistpane" class="pane">
     </ul>
-    <div id="perfPane" class="pane">
-      <div id="title"></div>
-      <div id="perf"></div>
+    <div id="recspane" class="pane">
+      <div id="titleline"></div>
+      <div id="reclist"></div>
     </div>
-    <div id="extraInfoPane" class="pane"></div>
-    <div id="questionPane" class="pane"></div>
-    <div id="resPane" class="pane"></div>
-    <div id="btnPane">
-      <button id="nextBtn">下一题</button>
-      <button id="startBtn">出　发</button>
-      <button id="repeatBtn">再一次</button>
-      <button id="perfBtn">看成绩</button>
-      <button id="backBtn">返　回</button>
+    <div id="exinfpane" class="pane"></div>
+    <div id="qupane" class="pane"></div>
+    <div id="respane" class="pane"></div>
+    <div id="btnspane">
+      <button id="nextbtn">下一题</button>
+      <button id="startbtn">出　发</button>
+      <button id="repeatbtn">再一次</button>
+      <button id="recsbtn">看成绩</button>
+      <button id="backbtn">返　回</button>
     </div>
-    <div id="ansPane" class="pane">
+    <div id="anspane" class="pane">
     </div>
   </div>
 </body>
+
 <script type="text/javascript" src="./jquery-3.4.1.min.js"></script>
 <script type="text/javascript" src="./utils.js"></script>
+
 <script type="text/javascript">
   document.body.style.fontSize = Math.min(16, Math.floor(window.innerWidth / 30)) + "px";
 
+  //done
   var ui = {
+    createTaskList: function () {
+      for (k in tasks) {
+        $('<li>', { key: k }).text(tasks[k].title).appendTo($("#tasklistpane"));
+        if (tasks[k].index == 0) {
+          globals.setActiveTask(k);
+        }
+      }
+    },
     showBtnsOnly: function () {
       let sb = new Set(arguments);
       $("button").each(function () {
@@ -112,60 +123,120 @@
       });
     },
     showActiveTitle: function (ckey) {
-      $("#listPane>li").each(function () {
+      $("#tasklistpane>li").each(function () {
         if ($(this).attr("key") == ckey) {
           $(this).removeClass("unselected").addClass("selected");
         } else {
           $(this).removeClass("selected").addClass("unselected");
         }
       });
+    },
+    showRecs(ckey) {
+      let title = tasks[ckey].title;
+      $("#titleline").text(title);
+
+      if (!recs[ckey] || recs[ckey].length == 0) {
+        $("#reclist").text("无记录");
+      } else {
+        let content = "";
+        for (let i = 0; i < recs[ckey].length; i++) {
+          let rec = recs[ckey][i];
+          let dateobj = new Date();
+          dateobj.setTime(rec.datems);
+          content += `${formatDate("YYYY-mm-dd HH:MM:SS", dateobj)} ${secsToMinSecs(rec.secs)}<br>`;
+        }
+        $("#reclist").html(content);
+      }
+      globals.setStage(RECS);
     }
   }
 
-  var tasks = {
-    data: {}, //{key:{title:string,recs:[{date:string,secs:int}]}}
-    fetchList: function () {
+  //done
+  var tasks = {} //{key:{title,questions,index}}
+
+  //done
+  var recs = {} //{key:[{datems,secs}]}datems是毫秒数
+
+  //done
+  var comm = {
+    fetchTaskList: function (callAfter) {
       $.ajax({
         url: "/dataindex.json",
-        dataType: "json" //默认是Intelligent Guess，如果再做parse会出错
-      }).done(function (tasks) {
-        for (let i = 0; i < tasks.length; i++) {
-          let task = tasks[i];
-          $('<li>', { key: task.key }).text(task.title).appendTo($("#listPane"));
-          //tasks[task.key] = { title: task.title }
-          if (i == 0) {
-            globals.setActiveTask(task.key);
-          }
+        dataType: "json", //默认是Intelligent Guess，如果再做parse会出错
+      }).done(function (ts) {
+        for (let i = 0; i < ts.length; i++) {
+          let t = ts[i];
+          tasks[t.key] = { title: t.title, index: i };
         }
-        $("#listPane>li").click(function () { globals.setActiveTask($(this).attr("key")); });
-        globals.setStage(READY);
+        sureCall(callAfter);
       });
     },
-    fetchRecs: function (key) { },
-    addRec: function (key, date, secs) {
-      let recs = this.data[key].recs;
-      if (!recs) {
-        recs = [];
-        this.data[key].recs = recs;
+    fetchTaskData: function (key, callAfter) {
+      if (tasks[key].questions) {
+        sureCall(callAfter);
+      } else {
+        $.ajax({
+          url: "/data/" + key + ".json",
+          dataType: "json",
+        }).done(function (data) {
+          tasks[key].questions = data;
+          sureCall(callAfter);
+        });
       }
-      let newRec = { date: formatDate(date), secs: secs };
-      recs.push(newRec);
+    },
+    fetchRecs: function (key, callAfter) {
+      if (recs[key]) {
+        sureCall(callAfter);
+      } else {
+        $.ajax({
+          url: "/recs/key",
+          dataType: "json",
+        }).done(function (rs) {
+          if (!recs[key]) { //can delete this stmt
+            recs[key] = [];
+          }
+          for (let i = 0; i < rs.length; i++) {
+            let rec = rs[i];
+            recs[key].push({ datems: rec.datems, secs: rec.secs })
+          }
+          sureCall(callAfter);
+        });
+      }
+    },
+    addRec: function (key, datems, secs, callAfter) {
+      let rec = { datems: datems, secs: secs };
+      if (!recs[key]) {
+        recs[key] = [];
+      }
+      recs[key].push(rec);
+      rec.key = key;
+
+      $.ajax({
+        url: "/rec/",
+        method: "POST",
+        data: JSON.stringify(rec),
+        dataType: "json",
+      }).done(function (recs) {
+        alert("record submited");
+        sureCall(callAfter);
+      });
     },
   }
 
-  var activeTask = {
+  //done
+  var aTask = {
     // key: "",
-    // data: null,
     // pos: 0,
     // startTime: 0,
     showWork: function () {
-      $("#extraInfoPane").text(`第${this.pos + 1}题`);
-      $("#questionPane").text(this.data[this.pos]);
-      $("#ansPane").text("点击看答案");
+      let qs = tasks[this.key].questions;
+      $("#exinfpane").text(`第${this.pos + 1}题`);
+      $("#qupane").text(qs[this.pos]);
+      $("#anspane").text("点击看答案");
     },
     moveNext: function () {
       this.pos++;
-      if (this.pos == this.data.length) {
+      if (this.pos == tasks[this.key].length) {
         globals.setStage(FINISHED);
       } else {
         this.showWork();
@@ -173,101 +244,47 @@
     }
   }
 
-  var PERFINFO = -2, READY = -1, WORKING = 0, FINISHED = 1;
+  var RECS = -2, READY = -1, WORKING = 0, FINISHED = 1;
 
   var globals = {
     stage: READY,
     setActiveTask: function (key) {
-      activeTask.key = key;
+      aTask.key = key;
       ui.showActiveTitle(key);
     },
     startWork: function () {
-      $.ajax({
-        url: "/data/" + activeTask.key + ".json",
-        dataType: "json"
-      }).done(function (data) {
-        activeTask.data = data;
-        activeTask.startTime = new Date().getTime();
-        activeTask.pos = 0;
+      let ckey = aTask.key;
+      comm.fetchTaskData(ckey, function () {
+        aTask.startTime = new Date().getTime();
+        aTask.pos = 0;
 
         globals.setStage(WORKING);
+        //this.setStage(WORKING););
       });
     },
     setStage: function (stage) {
       this.stage = stage;
       if (stage == READY) {
-        ui.showBtnsOnly("startBtn", "perfBtn");
-        ui.showPanesOnly("listPane");
-      } else if (stage == PERFINFO) {
-        ui.showBtnsOnly("backBtn");
-        ui.showPanesOnly("perfPane");
+        ui.showBtnsOnly("startbtn", "recsbtn");
+        ui.showPanesOnly("tasklistpane");
+      } else if (stage == RECS) {
+        comm.fetchRecs(aTask.key, function () { ui.showRecs(aTask.key); });
+        ui.showBtnsOnly("backbtn");
+        ui.showPanesOnly("recspane");
       } else if (stage == WORKING) {
-        ui.showBtnsOnly("nextBtn");
-        ui.showPanesOnly("extraInfoPane", "ansPane", "questionPane");
-        activeTask.showWork();
+        ui.showBtnsOnly("nextbtn");
+        ui.showPanesOnly("exinfpane", "anspane", "qupane");
+        aTask.showWork();
       } else if (stage == FINISHED) {
-        ui.showBtnsOnly("repeatBtn");
-        ui.showPanesOnly("resPane");
+        ui.showBtnsOnly("repeatbtn");
+        ui.showPanesOnly("respane");
 
         let curDate = new Date();
-        let secs = Math.round((curDate.getTime() - tasks.active.startTime) / 1000);
-        $("#resPane").text(secsToMinSecs(secs));
-        tasks.addRec(activeTask.key, curDate, secs);
+        let secs = Math.round((curDate.getTime() - aTask.startTime) / 1000);
+        $("#respane").text(secsToMinSecs(secs));
+        comm.addRec(aTask.key, curDate.getTime(), secs);
       }
     }
-  }
-
-  //***以下定义及创建元素变量***//
-
-  var lPane = document.getElementById("listPane");
-  var pPane = document.getElementById("perfPane");
-
-  var qPane = document.getElementById("questionPane");
-  var aPane = document.getElementById("ansPane");
-
-  var ei = document.getElementById("extraInfoPane");
-
-  var rPane = document.getElementById("resPane");
-
-  var startBtn = document.getElementById("startBtn");
-  var nextBtn = document.getElementById("nextBtn");
-  var perfBtn = document.getElementById("perfBtn");
-  var backBtn = document.getElementById("backBtn");
-  var repeatBtn = document.getElementById("repeatBtn");
-
-  var titleEl = document.getElementById("title");
-  var perfEl = document.getElementById("perf");
-
-//todo
-  function viewPerf() {
-    let title = curTitle;
-    titleEl.innerHTML = title;
-
-    let recStr = localStorage.getItem(title);
-    if (recStr) {
-      rec = JSON.parse(recStr);
-      perfEl.innerHTML = "";
-      for (let k in rec) {
-        perfEl.innerHTML += (k + "&nbsp;&nbsp;&nbsp;" + secsToMinSecs(parseInt(rec[k])) + "<BR />");
-      }
-    } else {
-      perfEl.innerHTML = "无记录";
-    }
-
-    globals.setStage(PERFINFO);
-  }
-
-//todo
-  function addRec(title, secs) {
-    let recs = {};
-    let recsStr = localStorage.getItem(title);
-    if (recsStr) {
-      recs = JSON.parse(recsStr);
-    }
-
-    recs[formatDate("YYYY-mm-dd HH:MM:SS", new Date())] = secs;
-
-    localStorage.setItem(title, JSON.stringify(recs));
   }
 
   $(function () {
@@ -276,18 +293,27 @@
       if (ev.which == 13) {
         ev.preventDefault();
         ev.stopPropagation();
-        globals.stage == READY ? globals.startWork() : activeTask.moveNext();
+        globals.stage == READY ? globals.startWork() : aTask.moveNext();
       }
     });
 
-    $("#startBtn").click(function () { globals.startWork(); });
-    perfBtn.onclick = viewPerf;
-    $("#nextBtn").click(function () { activeTask.moveNext(); });
-    $("#backBtn").click(function () { globals.setStage(READY); });
-    $("#repeatBtn").click(function () { globals.setStage(READY); });
-    $("#ansPane").click(function () { $(this).text("答案：" + eval(activeTask.data[activeTask.pos])); });
 
-    tasks.fetchList();
+    $("#startbtn").click(function () { globals.startWork(); });
+    $("#recsbtn").click(function () { globals.setStage(RECS) });
+    $("#nextbtn").click(function () { aTask.moveNext(); });
+    $("#backbtn").click(function () { globals.setStage(READY); });
+    $("#repeatbtn").click(function () { globals.setStage(READY); });
+    $("#anspane").click(function () {
+      $(this).text("答案：" + eval(tasks[aTask.key].questions[aTask.pos]));
+    });
+
+    comm.fetchTaskList(function () {
+      ui.createTaskList();
+      $("li").click(function () {
+        globals.setActiveTask($(this).attr("key"));
+      });
+    });
+    globals.setStage(READY);
   });
 </script>
 
