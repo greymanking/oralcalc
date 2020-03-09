@@ -19,6 +19,7 @@ func GetUser(c *gin.Context) string {
 func AddRecord(c *gin.Context) {
 	var rec Record
 	c.ShouldBindJSON(&rec)
+	recio.Add(GetUser(c), rec)
 	c.JSON(200, rec)
 }
 
@@ -29,7 +30,11 @@ func GetRecsAll(c *gin.Context) {
 
 func GetRecsByKey(c *gin.Context) {
 	recs := recio.Query(GetUser(c), c.Param("key"))
-	c.JSON(200, recs)
+	if recs == nil {
+		c.String(200, "[]")
+	} else {
+		c.JSON(200, recs)
+	}
 }
 
 func main() {

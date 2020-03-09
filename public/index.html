@@ -576,6 +576,17 @@
 
   updateListView("0");
 
+function getAllRecs(){
+  var recsArray = [];
+  for(let i=0;i<localStorage.length;i++){
+    let title = localStorage.key(i);
+    let recs = JSON.parse(localStorage.getItem(title));
+    for(let d in recs){
+      recsArray.push({title:title, datems:new Date(d).getTime(), secs: recs[d]});
+    }
+  }
+  console.log(recsArray);
+}
 </script>
 
 </html>

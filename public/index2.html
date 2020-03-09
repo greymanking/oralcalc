@@ -147,7 +147,6 @@
         }
         $("#reclist").html(content);
       }
-      globals.setStage(RECS);
     }
   }
 
@@ -189,7 +188,7 @@
         sureCall(callAfter);
       } else {
         $.ajax({
-          url: "/recs/key",
+          url: "/recs/"+key,
           dataType: "json",
         }).done(function (rs) {
           if (!recs[key]) { //can delete this stmt
@@ -236,7 +235,7 @@
     },
     moveNext: function () {
       this.pos++;
-      if (this.pos == tasks[this.key].length) {
+      if (this.pos == tasks[this.key].questions.length) {
         globals.setStage(FINISHED);
       } else {
         this.showWork();
