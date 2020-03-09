@@ -188,7 +188,7 @@
         sureCall(callAfter);
       } else {
         $.ajax({
-          url: "/recs/"+key,
+          url: "/recs/" + key,
           dataType: "json",
         }).done(function (rs) {
           if (!recs[key]) { //can delete this stmt
@@ -216,7 +216,7 @@
         data: JSON.stringify(rec),
         dataType: "json",
       }).done(function (recs) {
-        alert("record submited");
+        //alert("record submited");
         sureCall(callAfter);
       });
     },
@@ -313,6 +313,28 @@
       });
     });
     globals.setStage(READY);
+
+    var previousRecs = [
+      { "key": "005", "datems": 1583038828000, "secs": 190 },
+      { "key": "005", "datems": 1583039053000, "secs": 200 },
+      { "key": "005", "datems": 1583039269000, "secs": 202 },
+      { "key": "005", "datems": 1582894043000, "secs": 269 },
+      { "key": "005", "datems": 1582894351000, "secs": 273 },
+      { "key": "001", "datems": 1582805987000, "secs": 232 },
+      { "key": "009", "datems": 1583325263000, "secs": 507 },
+      { "key": "009", "datems": 1583325740000, "secs": 469 },
+      { "key": "009", "datems": 1583410368000, "secs": 473 },
+      { "key": "009", "datems": 1583410850000, "secs": 403 },
+      { "key": "009", "datems": 1583491574000, "secs": 383 },
+      { "key": "009", "datems": 1583491990000, "secs": 337 },
+      { "key": "009", "datems": 1583658108000, "secs": 265 },
+      { "key": "003", "datems": 1582806354000, "secs": 333 }
+    ]
+
+    for(let i=0;i<previousRecs.length;i++){
+      let r=previousRecs[i];
+      comm.addRec(r.key,r.datems,r.secs);
+    }
   });
 </script>
 
