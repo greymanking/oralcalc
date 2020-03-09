@@ -584,8 +584,9 @@ function getAllRecs(){
     for(let d in recs){
       recsArray.push({title:title, datems:new Date(d).getTime(), secs: recs[d]});
     }
+    return recsArray;
   }
-  console.log(recsArray);
+  azone.innerHTML = JSON.stringify(recsArray);
 }
 </script>
 
