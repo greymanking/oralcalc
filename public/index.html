@@ -295,6 +295,7 @@
 </script>
 
 <body>
+  <div id="recss"></div>
   <div id="taskZone">
     <ul id="listZone">
     </ul>
@@ -584,10 +585,11 @@ function getAllRecs(){
     for(let d in recs){
       recsArray.push({title:title, datems:new Date(d).getTime(), secs: recs[d]});
     }
-    return recsArray;
   }
-  azone.innerHTML = JSON.stringify(recsArray);
+  return recsArray;
 }
+
+document.getElementById("recss").innerHTML = JSON.stringify(getAllRecs());
 </script>
 
 </html>
