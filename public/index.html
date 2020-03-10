@@ -198,6 +198,7 @@
             let rec = rs[i];
             recs[key].push({ datems: rec.datems, secs: rec.secs })
           }
+          recs[key] = recs[key].sort(function(a,b){return a.datems>b.datems?1:-1});
           sureCall(callAfter);
         });
       }
@@ -267,9 +268,10 @@
         ui.showBtnsOnly("startbtn", "recsbtn");
         ui.showPanesOnly("tasklistpane");
       } else if (stage == RECS) {
-        comm.fetchRecs(aTask.key, function () { ui.showRecs(aTask.key); });
-        ui.showBtnsOnly("backbtn");
-        ui.showPanesOnly("recspane");
+        comm.fetchRecs(aTask.key, function () { 
+        	ui.showRecs(aTask.key); 
+        	ui.showBtnsOnly("backbtn");
+        	ui.showPanesOnly("recspane");});
       } else if (stage == WORKING) {
         ui.showBtnsOnly("nextbtn");
         ui.showPanesOnly("exinfpane", "anspane", "qupane");
