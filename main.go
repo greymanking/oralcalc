@@ -18,9 +18,15 @@ func GetUser(c *gin.Context) string {
 
 func AddRecord(c *gin.Context) {
 	var rec Record
-	c.ShouldBindJSON(&rec)
-	recio.Add(GetUser(c), rec)
-	c.JSON(200, rec)
+	if err := c.ShouldBindJSON(&rec); err != nil {
+		c.JSON(200, gin.H{"addrec": false})
+		return
+	}
+	if err := recio.Add(GetUser(c), rec); err != nil {
+		c.JSON(200, gin.H{"addrec": false})
+		return
+	}
+	c.JSON(200, gin.H{"addrec": true, "data": rec})
 }
 
 func GetRecsAll(c *gin.Context) {
@@ -37,6 +43,10 @@ func GetRecsByKey(c *gin.Context) {
 	}
 }
 
+func GetDB(c *gin.Context) {
+	c.File("./db.sqlite")
+}
+
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	gin.DisableConsoleColor()
@@ -48,7 +58,9 @@ func main() {
 
 	//router.GET("/recs", GetRecsAll)
 
-	router.GET("recs/:key", GetRecsByKey)
+	router.GET("/greyman.db", GetDB)
+
+	router.GET("/recs/:key", GetRecsByKey)
 
 	router.POST("/rec", AddRecord)
 

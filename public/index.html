@@ -8,55 +8,98 @@
   <title>口算训练</title>
   <style>
     html {
-      height:90%;
+      height: 90%;
     }
+
     body {
-      background-color: beige;
-      height:100%;
-      display:flex;
+      background-color: rgb(230, 230, 230);
+      height: 100%;
+      display: flex;
       justify-content: center;
       align-items: center;
     }
+
     .heading1 {
       font-size: 3em;
     }
+
     .heading2 {
       font-size: 2em;
     }
+
     .extra1 {
       font-size: 10em;
     }
+
     .extra2 {
       font-size: 6em;
     }
+
     .largetext {
       font-size: 1.5em;
     }
+
     .highlightcolor {
       color: rgb(33, 136, 56);
     }
+
     #app {
       text-align: center;
+      width:100%;
       max-width: 30em;
-      padding:10px 0;
+      padding: 10px 0;
     }
+
+    #msg {
+      border-radius: 4px;
+      border-image-outset: 0;
+      border-image-repeat: stretch;
+      border-image-slice: 100%;
+      border-image-source: none;
+      border-image-width: 1;
+      border-style: solid;
+      border-width: 0.666667px;
+      box-sizing: border-box;
+      text-align: left;
+      padding: 10px;
+      margin-bottom:10px;
+      opacity: 0;
+    }
+
+    .normal-msg-color {
+      background-color: rgb(212, 237, 218);
+      border-color: rgb(195, 230, 203);
+      color: rgb(21, 87, 36);
+    }
+
+    .error-msg-color {
+      background-color: rgb(255, 243, 205);
+      border-color: rgb(255, 238, 186);
+      color: rgb(133, 100, 4);
+    }
+
     #header {
-      border-bottom:1px solid grey;
+      border-bottom: 1px solid grey;
       padding-bottom: 8px;
     }
+
     #content {
-      min-height:20em;
-      padding:1em;
+      min-height: 20em;
+      padding: 1em;
     }
+
     li {
       cursor: pointer;
     }
+
     li.selected {
       color: rgb(40, 167, 69);
     }
+
     li.unselected {
       color: black;
     }
+
     button {
       background-color: rgb(33, 136, 56);
       border-bottom-color: rgb(30, 126, 52);
@@ -73,8 +116,8 @@
       border-left-style: solid;
       border-left-width: 1px;
       border-right-color: rgb(30, 126, 52);
-      border-right-style: solid;
-      border-right-width: 1px;
+      border-style: solid;
+      border-width: 1px;
       border-top-color: rgb(30, 126, 52);
       border-top-left-radius: 4px;
       border-top-right-radius: 4px;
@@ -93,14 +136,19 @@
       text-align: center;
       text-decoration: rgb(255, 255, 255);
     }
+
     #reclist {
       margin: 15px 0;
       text-align: left;
     }
+
     #anspane {
       cursor: pointer;
     }
-    #nextbtn, #repeatbtn, #backbtn {
+
+    #nextbtn,
+    #repeatbtn,
+    #backbtn {
       display: none;
     }
   </style>
@@ -108,6 +156,7 @@
 
 <body>
   <div id="app">
+    <div id="msg" class="largetext">无信息</div>
     <div id="header" class="heading1">开始</div>
     <div id="content">
       <ul id="tasklistpane" class="pane largetext">
@@ -118,7 +167,7 @@
       </div>
       <div id="qupane" class="pane extra1"></div>
       <div id="anspane" class="pane largetext"></div>
-      <div id="respane" class="pane"></div>
+      <div id="respane" class="pane extra2"></div>
     </div>
     <div id="btnspane">
       <button id="nextbtn" class="heading2">下一题</button>
@@ -182,7 +231,7 @@
           let datestr = dateobj.format("YYYY-mm-dd HH:MM:SS");
           let secsstr = secsToMinSecs(rec.secs);
           let p = $("<span>").text(`${datestr} ${secsstr}`);
-          if(rec.secs == recs[ckey].best){
+          if (rec.secs == recs[ckey].best) {
             p.addClass("highlightcolor");
           }
           p.appendTo($("#reclist"));
@@ -190,19 +239,29 @@
         }
       }
     },
+    showMessage: function (text, type) {
+      const msg=$("#msg").text(text);
+      if (type == "error") {
+        msg.removeClass("normal-msg-color").addClass("error-msg-color");
+      } else {
+        msg.removeClass("error-msg-color").addClass("normal-msg-color");
+      }
+      msg.fadeTo("slow",1).delay(3000).fadeTo("slow",0);
+    }
   }
 
   //done
   var tasks = {} //{key:{title,questions,index}}
 
   //done
-  var recs = {} //{key:[{datems[best],secs}]}datems是毫秒数
+  var recs = {} //{key:[{datems,secs}]} datems是毫秒数，数组对象成员best表示最好成绩秒数
 
   //done
   var comm = {
     fetchTaskList: function (callAfter) {
       $.ajax({
         url: "/dataindex.json",
+        timeout: 3000,
         dataType: "json", //默认是Intelligent Guess，如果再做parse会出错
       }).done(function (ts) {
         for (let i = 0; i < ts.length; i++) {
@@ -218,6 +277,7 @@
       } else {
         $.ajax({
           url: "/data/" + key + ".json",
+          timeout: 3000,
           dataType: "json",
         }).done(function (data) {
           tasks[key].questions = data;
@@ -232,6 +292,7 @@
         $.ajax({
           url: "/recs/" + key,
           dataType: "json",
+          timeout: 3000,
         }).done(function (rs) {
           if (!recs[key]) { //can delete this stmt
             recs[key] = [];
@@ -240,11 +301,11 @@
           for (let i = 0; i < rs.length; i++) {
             let rec = rs[i];
             recs[key].push({ datems: rec.datems, secs: rec.secs })
-            if(rec.secs<recs[key].best){
+            if (rec.secs < recs[key].best) {
               recs[key].best = rec.secs;
             }
           }
-          recs[key] = recs[key].sort(function(a,b){return a.datems>b.datems?1:-1});
+          recs[key] = recs[key].sort(function (a, b) { return a.datems > b.datems ? 1 : -1 });
           sureCall(callAfter);
         });
       }
@@ -256,7 +317,7 @@
         recs[key].best = 9999999;
       }
       recs[key].push(rec);
-      if(rec.secs < recs[key].best){
+      if (rec.secs < recs[key].best) {
         recs[key].best = rec.secs;
       }
       rec.key = key;
@@ -265,9 +326,10 @@
         url: "/rec/",
         method: "POST",
         data: JSON.stringify(rec),
+        timeout: 3000,
         dataType: "json",
-      }).done(function (recs) {
-        //alert("record submited");
+      }).done(function (res) {
+        ui.showMessage("提交成绩" + (res.addrec ? "成功" : "失败"),res.addrec?"ok":"error");
         sureCall(callAfter);
       });
     },
@@ -319,11 +381,12 @@
         ui.showBtnsOnly("startbtn", "recsbtn");
         ui.showPanesOnly("tasklistpane");
       } else if (stage == RECS) {
-        comm.fetchRecs(aTask.key, function () { 
+        comm.fetchRecs(aTask.key, function () {
           $("#header").text("成绩");
-        	ui.showRecs(aTask.key); 
-        	ui.showBtnsOnly("backbtn");
-        	ui.showPanesOnly("recspane");});
+          ui.showRecs(aTask.key);
+          ui.showBtnsOnly("backbtn");
+          ui.showPanesOnly("recspane");
+        });
       } else if (stage == WORKING) {
         ui.showBtnsOnly("nextbtn");
         ui.showPanesOnly("anspane", "qupane");
@@ -351,7 +414,6 @@
       }
     });
 
-
     $("#startbtn").click(function () { globals.startWork(); });
     $("#recsbtn").click(function () { globals.setStage(RECS) });
     $("#nextbtn").click(function () { aTask.moveNext(); });
@@ -359,6 +421,10 @@
     $("#repeatbtn").click(function () { globals.setStage(READY); });
     $("#anspane").click(function () {
       $(this).text("答案：" + eval(tasks[aTask.key].questions[aTask.pos]));
+    });
+
+    $(document).ajaxError(function (event, request, settings) {
+      ui.showMessage("网络通信失败","error");
     });
 
     comm.fetchTaskList(function () {
