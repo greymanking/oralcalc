@@ -7,89 +7,125 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>口算训练</title>
   <style>
+    html {
+      height:90%;
+    }
     body {
       background-color: beige;
+      height:100%;
+      display:flex;
+      justify-content: center;
+      align-items: center;
     }
-
-    #app {
-      margin: 0 auto;
-      text-align: center;
-      vertical-align: middle;
-      max-width: 30em;
+    .heading1 {
+      font-size: 3em;
     }
-
-    li {
-      cursor: pointer;
+    .heading2 {
       font-size: 2em;
     }
-
-    li.selected {
-      color: blue;
+    .extra1 {
+      font-size: 10em;
     }
-
+    .extra2 {
+      font-size: 6em;
+    }
+    .largetext {
+      font-size: 1.5em;
+    }
+    .highlightcolor {
+      color: rgb(33, 136, 56);
+    }
+    #app {
+      text-align: center;
+      max-width: 30em;
+      padding:10px 0;
+    }
+    #header {
+      border-bottom:1px solid grey;
+      padding-bottom: 8px;
+    }
+    #content {
+      min-height:20em;
+      padding:1em;
+    }
+    li {
+      cursor: pointer;
+    }
+    li.selected {
+      color: rgb(40, 167, 69);
+    }
     li.unselected {
       color: black;
     }
-
     button {
-      font-size: 2em;
-      margin: 10px;
-      padding: 0 20px;
+      background-color: rgb(33, 136, 56);
+      border-bottom-color: rgb(30, 126, 52);
+      border-bottom-left-radius: 4px;
+      border-bottom-right-radius: 4px;
+      border-bottom-style: solid;
+      border-bottom-width: 1px;
+      border-image-outset: 0;
+      border-image-repeat: stretch;
+      border-image-slice: 100%;
+      border-image-source: none;
+      border-image-width: 1;
+      border-left-color: rgb(30, 126, 52);
+      border-left-style: solid;
+      border-left-width: 1px;
+      border-right-color: rgb(30, 126, 52);
+      border-right-style: solid;
+      border-right-width: 1px;
+      border-top-color: rgb(30, 126, 52);
+      border-top-left-radius: 4px;
+      border-top-right-radius: 4px;
+      border-top-style: solid;
+      border-top-width: 1px;
+      box-sizing: border-box;
+      color: rgb(255, 255, 255);
+      cursor: pointer;
+      display: inline-block;
+      line-height: 24px;
+      margin: 4px;
+      overflow: visible;
+      overflow-x: visible;
+      overflow-y: visible;
+      padding: 12px;
+      text-align: center;
+      text-decoration: rgb(255, 255, 255);
     }
-
-    #exinfpane {
-      font-size: 1.5em;
-    }
-
-    #anspane {
-      font-size: 1.5em;
-    }
-
-    #titleline {
-      font-size: 2em;
-    }
-
     #reclist {
-      font-size: 1.5em;
       margin: 15px 0;
-      color: blue;
       text-align: left;
     }
-
-    #qupane {
-      font-size: 10em;
-      vertical-align: bottom;
-    }
-
-    #respane {
-      font-size: 6em;
-    }
-
     #anspane {
       cursor: pointer;
+    }
+    #nextbtn, #repeatbtn, #backbtn {
+      display: none;
     }
   </style>
 </head>
 
 <body>
   <div id="app">
-    <ul id="tasklistpane" class="pane">
-    </ul>
-    <div id="recspane" class="pane">
-      <div id="titleline"></div>
-      <div id="reclist"></div>
+    <div id="header" class="heading1">开始</div>
+    <div id="content">
+      <ul id="tasklistpane" class="pane largetext">
+      </ul>
+      <div id="recspane" class="pane">
+        <div id="rectitle" class="heading2"></div>
+        <div id="reclist" class="largetext"></div>
+      </div>
+      <div id="qupane" class="pane extra1"></div>
+      <div id="anspane" class="pane largetext"></div>
+      <div id="respane" class="pane"></div>
     </div>
-    <div id="exinfpane" class="pane"></div>
-    <div id="qupane" class="pane"></div>
-    <div id="respane" class="pane"></div>
     <div id="btnspane">
-      <button id="nextbtn">下一题</button>
-      <button id="startbtn">出　发</button>
-      <button id="repeatbtn">再一次</button>
-      <button id="recsbtn">看成绩</button>
-      <button id="backbtn">返　回</button>
-    </div>
-    <div id="anspane" class="pane">
+      <button id="nextbtn" class="heading2">下一题</button>
+      <button id="startbtn" class="heading2">出　发</button>
+      <button id="repeatbtn" class="heading2">再一次</button>
+      <button id="recsbtn" class="heading2">看成绩</button>
+      <button id="backbtn" class="heading2">返　回</button>
     </div>
   </div>
 </body>
@@ -133,28 +169,34 @@
     },
     showRecs(ckey) {
       let title = tasks[ckey].title;
-      $("#titleline").text(title);
+      $("#rectitle").text(title);
 
       if (!recs[ckey] || recs[ckey].length == 0) {
         $("#reclist").text("无记录");
       } else {
-        let content = "";
+        $("#reclist").empty();
         for (let i = 0; i < recs[ckey].length; i++) {
           let rec = recs[ckey][i];
           let dateobj = new Date();
           dateobj.setTime(rec.datems);
-          content += `${dateobj.format("YYYY-mm-dd HH:MM:SS")} ${secsToMinSecs(rec.secs)}<br>`;
+          let datestr = dateobj.format("YYYY-mm-dd HH:MM:SS");
+          let secsstr = secsToMinSecs(rec.secs);
+          let p = $("<span>").text(`${datestr} ${secsstr}`);
+          if(rec.secs == recs[ckey].best){
+            p.addClass("highlightcolor");
+          }
+          p.appendTo($("#reclist"));
+          $("<br>").appendTo($("#reclist"));
         }
-        $("#reclist").html(content);
       }
-    }
+    },
   }
 
   //done
   var tasks = {} //{key:{title,questions,index}}
 
   //done
-  var recs = {} //{key:[{datems,secs}]}datems是毫秒数
+  var recs = {} //{key:[{datems[best],secs}]}datems是毫秒数
 
   //done
   var comm = {
@@ -193,10 +235,14 @@
         }).done(function (rs) {
           if (!recs[key]) { //can delete this stmt
             recs[key] = [];
+            recs[key].best = 9999999;
           }
           for (let i = 0; i < rs.length; i++) {
             let rec = rs[i];
             recs[key].push({ datems: rec.datems, secs: rec.secs })
+            if(rec.secs<recs[key].best){
+              recs[key].best = rec.secs;
+            }
           }
           recs[key] = recs[key].sort(function(a,b){return a.datems>b.datems?1:-1});
           sureCall(callAfter);
@@ -207,8 +253,12 @@
       let rec = { datems: datems, secs: secs };
       if (!recs[key]) {
         recs[key] = [];
+        recs[key].best = 9999999;
       }
       recs[key].push(rec);
+      if(rec.secs < recs[key].best){
+        recs[key].best = rec.secs;
+      }
       rec.key = key;
 
       $.ajax({
@@ -230,7 +280,7 @@
     // startTime: 0,
     showWork: function () {
       let qs = tasks[this.key].questions;
-      $("#exinfpane").text(`第${this.pos + 1}题`);
+      $("#header").text(`第${this.pos + 1}题`);
       $("#qupane").text(qs[this.pos]);
       $("#anspane").text("点击看答案");
     },
@@ -265,18 +315,21 @@
     setStage: function (stage) {
       this.stage = stage;
       if (stage == READY) {
+        $("#header").text("开始");
         ui.showBtnsOnly("startbtn", "recsbtn");
         ui.showPanesOnly("tasklistpane");
       } else if (stage == RECS) {
         comm.fetchRecs(aTask.key, function () { 
+          $("#header").text("成绩");
         	ui.showRecs(aTask.key); 
         	ui.showBtnsOnly("backbtn");
         	ui.showPanesOnly("recspane");});
       } else if (stage == WORKING) {
         ui.showBtnsOnly("nextbtn");
-        ui.showPanesOnly("exinfpane", "anspane", "qupane");
+        ui.showPanesOnly("anspane", "qupane");
         aTask.showWork();
       } else if (stage == FINISHED) {
+        $("#header").text("完成");
         ui.showBtnsOnly("repeatbtn");
         ui.showPanesOnly("respane");
 
