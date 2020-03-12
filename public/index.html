@@ -16,7 +16,7 @@
       height: 100%;
       display: flex;
       justify-content: center;
-      align-items: center;
+      /*align-items: center;*/
     }
 
     .heading1 {
@@ -100,6 +100,18 @@
       color: black;
     }
 
+	table{
+      border-collapse:collapse;/* 取消表格边框 */
+      border-top:1px dotted rgb(40, 167, 69);
+      margin:5px 0;
+      width: 100%;
+    }
+	table,th,tr,td{ 
+      border-bottom:1px dotted rgb(40, 167, 69);/* 表格横线 */
+      padding:3px;
+      text-align: center;
+    }
+
     button {
       background-color: rgb(33, 136, 56);
       border-bottom-color: rgb(30, 126, 52);
@@ -132,15 +144,15 @@
       overflow: visible;
       overflow-x: visible;
       overflow-y: visible;
-      padding: 12px;
+      padding: 0.4em;
       text-align: center;
       text-decoration: rgb(255, 255, 255);
     }
 
-    #reclist {
+/*    #reclist {
       margin: 15px 0;
       text-align: left;
-    }
+    }*/
 
     #anspane {
       cursor: pointer;
@@ -163,7 +175,7 @@
       </ul>
       <div id="recspane" class="pane">
         <div id="rectitle" class="heading2"></div>
-        <div id="reclist" class="largetext"></div>
+        <table><tbody id="reclist" class="largetext"></tbody></table>
       </div>
       <div id="qupane" class="pane extra1"></div>
       <div id="anspane" class="pane largetext"></div>
@@ -216,26 +228,25 @@
         }
       });
     },
-    showRecs(ckey) {
+    showRecs: function(ckey) {
       let title = tasks[ckey].title;
       $("#rectitle").text(title);
 
-      if (!recs[ckey] || recs[ckey].length == 0) {
-        $("#reclist").text("无记录");
-      } else {
-        $("#reclist").empty();
+      $("#reclist").empty();
+      if (recs[ckey] && recs[ckey].length > 0) {
         for (let i = 0; i < recs[ckey].length; i++) {
           let rec = recs[ckey][i];
           let dateobj = new Date();
           dateobj.setTime(rec.datems);
           let datestr = dateobj.format("YYYY-mm-dd HH:MM:SS");
           let secsstr = secsToMinSecs(rec.secs);
-          let p = $("<span>").text(`${datestr} ${secsstr}`);
+          let tr = $("<tr>")
+          tr.html("<td>"+datestr+"</td><td>"+secsstr+"</td>");
           if (rec.secs == recs[ckey].best) {
-            p.addClass("highlightcolor");
+            tr.addClass("highlightcolor");
           }
-          p.appendTo($("#reclist"));
-          $("<br>").appendTo($("#reclist"));
+          tr.appendTo($("#reclist"));
+          //$("<br>").appendTo($("#reclist"));
         }
       }
     },
@@ -342,7 +353,7 @@
     // startTime: 0,
     showWork: function () {
       let qs = tasks[this.key].questions;
-      $("#header").text(`第${this.pos + 1}题`);
+      $("#header").text("第"+(this.pos + 1)+"题");
       $("#qupane").text(qs[this.pos]);
       $("#anspane").text("点击看答案");
     },
