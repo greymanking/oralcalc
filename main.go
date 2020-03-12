@@ -44,7 +44,7 @@ func GetRecsByKey(c *gin.Context) {
 }
 
 func GetDB(c *gin.Context) {
-	c.File("./db.sqlite")
+	c.File("db.sqlite")
 }
 
 func main() {
