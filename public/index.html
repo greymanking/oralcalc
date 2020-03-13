@@ -169,7 +169,7 @@
 <body>
   <div id="app">
     <div id="msg" class="largetext">无信息</div>
-    <div id="header" class="heading1">开始</div>
+    <div id="header" class="heading1 highlightcolor">开始</div>
     <div id="content">
       <ul id="tasklistpane" class="pane largetext">
       </ul>
@@ -195,6 +195,7 @@
 <script type="text/javascript" src="./utils.js"></script>
 
 <script type="text/javascript">
+  //todo:避免ajax重复提交
   document.body.style.fontSize = Math.min(16, Math.floor(window.innerWidth / 30)) + "px";
 
   //done
@@ -333,11 +334,11 @@
       }
       rec.key = key;
 
+      //如果第一次失败，要再次提交
       $.ajax({
         url: "/rec/",
         method: "POST",
         data: JSON.stringify(rec),
-        timeout: 3000,
         dataType: "json",
       }).done(function (res) {
         ui.showMessage("提交成绩" + (res.addrec ? "成功" : "失败"),res.addrec?"ok":"error");
