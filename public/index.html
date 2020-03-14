@@ -282,11 +282,11 @@
     });
 
     $(document).ajaxSend(function (event, request, settings) {
-      $("button").attr("enabled","false");
+      $("button").attr("disabled", "disabled");
     });
 
     $(document).ajaxStop(function(){
-      $("button").attr("enabled","true");
+      $("button").removeAttr("disabled");
     });
 
     comm.fetchTaskList(function () {
