@@ -18,7 +18,9 @@
       </ul>
       <div id="recspane" class="pane">
         <div id="rectitle" class="heading2"></div>
-        <table><tbody id="reclist" class="largetext"></tbody></table>
+        <table>
+          <tbody id="reclist" class="largetext"></tbody>
+        </table>
       </div>
       <div id="qupane" class="pane extra1"></div>
       <div id="anspane" class="pane largetext"></div>
@@ -33,10 +35,8 @@
     </div>
   </div>
 </body>
-
 <script type="text/javascript" src="./jquery-3.4.1.min.js"></script>
 <script type="text/javascript" src="./utils.js"></script>
-
 <script type="text/javascript">
   //todo:避免ajax重复提交
   document.body.style.fontSize = Math.min(16, Math.floor(window.innerWidth / 30)) + "px";
@@ -72,7 +72,7 @@
         }
       });
     },
-    showRecs: function(ckey) {
+    showRecs: function (ckey) {
       let title = tasks[ckey].title;
       $("#rectitle").text(title);
 
@@ -85,7 +85,7 @@
           let datestr = dateobj.format("YYYY-mm-dd HH:MM:SS");
           let secsstr = secsToMinSecs(rec.secs);
           let tr = $("<tr>")
-          tr.html("<td>"+datestr+"</td><td>"+secsstr+"</td>");
+          tr.html("<td>" + datestr + "</td><td>" + secsstr + "</td>");
           if (rec.secs == recs[ckey].best) {
             tr.addClass("highlightcolor");
           }
@@ -95,13 +95,13 @@
       }
     },
     showMessage: function (text, type) {
-      const msg=$("#msg").text(text);
+      const msg = $("#msg").text(text);
       if (type == "error") {
         msg.removeClass("normal-msg-color").addClass("error-msg-color");
       } else {
         msg.removeClass("error-msg-color").addClass("normal-msg-color");
       }
-      msg.fadeTo("slow",1).delay(3000).fadeTo("slow",0);
+      msg.fadeTo("slow", 1).delay(3000).fadeTo("slow", 0);
     }
   }
 
@@ -141,54 +141,48 @@
       }
     },
     fetchRecs: function (key, callAfter) {
-      if (recs[key]) {
+      $.ajax({
+        url: "/recs/" + key,
+        dataType: "json",
+        timeout: 3000,
+      }).done(function (rs) {
+        recs[key] = [];
+        recs[key].best = 9999999;
+
+        for (let i = 0; i < rs.length; i++) {
+          let rec = rs[i];
+          recs[key].push({ datems: rec.datems, secs: rec.secs })
+          if (rec.secs < recs[key].best) {
+            recs[key].best = rec.secs;
+          }
+        }
+        recs[key] = recs[key].sort(function (a, b) { return a.datems > b.datems ? 1 : -1 });
         sureCall(callAfter);
-      } else {
-        $.ajax({
-          url: "/recs/" + key,
-          dataType: "json",
-          timeout: 3000,
-        }).done(function (rs) {
-          if (!recs[key]) { //can delete this stmt
-            recs[key] = [];
-            recs[key].best = 9999999;
-          }
-          for (let i = 0; i < rs.length; i++) {
-            let rec = rs[i];
-            recs[key].push({ datems: rec.datems, secs: rec.secs })
-            if (rec.secs < recs[key].best) {
-              recs[key].best = rec.secs;
-            }
-          }
-          recs[key] = recs[key].sort(function (a, b) { return a.datems > b.datems ? 1 : -1 });
-          sureCall(callAfter);
-        });
-      }
+      });
     },
     addRec: function (key, datems, secs, callAfter) {
-      // let rec = { datems: datems, secs: secs };
-      // if (!recs[key]) {
-      //   recs[key] = [];
-      //   recs[key].best = 9999999;
-      // }
-      // recs[key].push(rec);
-      // if (rec.secs < recs[key].best) {
-      //   recs[key].best = rec.secs;
-      // }
-      // rec.key = key;
       //如果第一次失败，要再次提交
       $.ajax({
         url: "/rec/",
         method: "POST",
-        data: JSON.stringify({ key:key, datems: datems, secs: secs }),
+        data: JSON.stringify({ key: key, datems: datems, secs: secs }),
         dataType: "json",
-      }).done(function (res) {
-        ui.showMessage("提交成绩" + (res.addrec ? "成功" : "失败"),res.addrec?"ok":"error");
-        sureCall(callAfter);
-      });
+        tryCount: 0,
+        retryLimit: 2,
+        success: function (res) {
+          ui.showMessage("提交成绩" + (res.addrec ? "成功" : "失败"), res.addrec ? "ok" : "error");
+          sureCall(callAfter);
+        },
+        error: function (xhr, textStatus, errorThrown) {
+          this.tryCount++;
+          if (this.tryCount <= this.retryLimit) {
+            //try again
+            $.ajax(this);
+          }
+        }
+      })
     },
   }
-
   //done
   var aTask = {
     // key: "",
@@ -196,7 +190,7 @@
     // startTime: 0,
     showWork: function () {
       let qs = tasks[this.key].questions;
-      $("#header").text("第"+(this.pos + 1)+"题");
+      $("#header").text("第" + (this.pos + 1) + "题");
       $("#qupane").text(qs[this.pos]);
       $("#anspane").text("点击看答案");
     },
@@ -210,7 +204,10 @@
     }
   }
 
-  var RECS = -2, READY = -1, WORKING = 0, FINISHED = 1;
+  var RECS = -2,
+    READY = -1,
+    WORKING = 0,
+    FINISHED = 1;
 
   var globals = {
     stage: READY,
@@ -278,14 +275,14 @@
     });
 
     $(document).ajaxError(function (event, request, settings) {
-      ui.showMessage("网络通信失败","error");
+      ui.showMessage("网络通信失败", "error");
     });
 
     $(document).ajaxSend(function (event, request, settings) {
       $("button").attr("disabled", "disabled");
     });
 
-    $(document).ajaxStop(function(){
+    $(document).ajaxStop(function () {
       $("button").removeAttr("disabled");
     });
 

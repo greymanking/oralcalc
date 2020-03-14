@@ -39,6 +39,10 @@ body {
     width: 100%;
     max-width: 30em;
     padding: 10px 0;
+    background-image: url(images/ivy2.png);
+    background-repeat: no-repeat;
+    background-size: 14em;
+    background-position: bottom left;
 }
 
 #msg {
@@ -144,6 +148,10 @@ button {
     padding: 0.4em;
     text-align: center;
     text-decoration: rgb(255, 255, 255);
+}
+
+button:disabled {
+	background-color: grey;
 }
 
 /*    #reclist {
