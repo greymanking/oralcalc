@@ -160,12 +160,12 @@
         sureCall(callAfter);
       });
     },
-    addRec: function (key, datems, secs, callAfter) {
+    addRec: function (recdata, callAfter) {
       //如果第一次失败，要再次提交
       $.ajax({
         url: "/rec/",
         method: "POST",
-        data: JSON.stringify({ key: key, datems: datems, secs: secs }),
+        data: JSON.stringify(recdata),
         dataType: "json",
         tryCount: 0,
         retryLimit: 2,
@@ -222,7 +222,6 @@
         aTask.pos = 0;
 
         globals.setStage(WORKING);
-        //this.setStage(WORKING););
       });
     },
     setStage: function (stage) {
@@ -250,7 +249,7 @@
         let curDate = new Date();
         let secs = Math.round((curDate.getTime() - aTask.startTime) / 1000);
         $("#respane").text(secsToMinSecs(secs));
-        comm.addRec(aTask.key, curDate.getTime(), secs);
+        comm.addRec({ key: aTask.key, datems: curDate.getTime(), secs: secs })
       }
     }
   }
