@@ -171,6 +171,10 @@
         retryLimit: 2,
         success: function (res) {
           ui.showMessage("提交成绩" + (res.addrec ? "成功" : "失败"), res.addrec ? "ok" : "error");
+          let ls_item = "frs"+recdata.key+"_"+recdata.datems;
+          if(localStorage.getItem(ls_item)){
+            localStorage.removeItem(ls_item);
+          }
           sureCall(callAfter);
         },
         error: function (xhr, textStatus, errorThrown) {
@@ -178,6 +182,8 @@
           if (this.tryCount <= this.retryLimit) {
             //try again
             $.ajax(this);
+          } else {
+            localStorage.setItem("frs"+recdata.key+"_"+recdata.datems, recdata.secs);
           }
         }
       })
@@ -292,6 +298,18 @@
       });
     });
     globals.setStage(READY);
+
+    for(let i=0;i<localStorage.length;i++){
+      let k = localStorage.key(i);
+      if(k.startsWith("frs")){
+        recdata = {}
+        let [key,datems] = k.substr(3).split("_",2);
+        recdata.key = key;
+        recdata.datems = parseInt(datems);
+        recdata.secs = parseInt(localStorage[k]);
+        comm.addRec(recdata);
+      }
+    }
   });
 </script>
 

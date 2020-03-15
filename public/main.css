@@ -39,10 +39,10 @@ body {
     width: 100%;
     max-width: 30em;
     padding: 10px 0;
-    background-image: url(images/ivy2.png);
+    /* background-image: url(images/ivy2.png);
     background-repeat: no-repeat;
-    background-size: 14em;
-    background-position: bottom left;
+    background-size: 100% 100%;
+    background-position: bottom left; */
 }
 
 #msg {
