@@ -82,7 +82,7 @@
           let rec = recs[ckey][i];
           let dateobj = new Date();
           dateobj.setTime(rec.datems);
-          let datestr = dateobj.format("YYYY-mm-dd HH:MM:SS");
+          let datestr = dateobj.format("YYYY年mm月dd日 HH时MM分");
           let secsstr = secsToMinSecs(rec.secs);
           let tr = $("<tr>")
           tr.html("<td>" + datestr + "</td><td>" + secsstr + "</td>");

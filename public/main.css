@@ -113,6 +113,10 @@ td {
     text-align: center;
 }
 
+tr>td:last-of-type {
+    text-align: right;
+}
+
 button {
     background-color: rgb(33, 136, 56);
     border-bottom-color: rgb(30, 126, 52);
