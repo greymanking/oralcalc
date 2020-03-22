@@ -45,6 +45,12 @@ func (rs *RecsSqlite) Add(user string, rec Record) error {
 	if userId <= 0 {
 		return errors.New("user query failed")
 	}
+	var sameRecCount int
+	rs.dbp.QueryRow("SELECT COUNT(date) FROM recs WHERE user=? AND date=?",
+		userId, rec.Date).Scan(&sameRecCount)
+	if sameRecCount > 0 {
+		return errors.New("record already exists")
+	}
 	stmt, err := rs.dbp.Prepare("INSERT INTO recs(user, key, date, secs) values(?,?,?,?)")
 	if err != nil {
 		return err
